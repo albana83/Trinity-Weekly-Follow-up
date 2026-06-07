@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Trinity · Referral Intelligence</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8f7f4;color:#1a1814;line-height:1.5;padding:32px;font-size:14px}
+h1{font-size:22px;font-weight:600;margin-bottom:6px}
+.sub{font-size:13px;color:#6b6359;margin-bottom:20px}
+.ssep{font-size:11px;font-weight:600;color:#6b6359;letter-spacing:.06em;text-transform:uppercase;margin:14px 0 8px}
+.zones{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:8px}
+.zone{border:1px solid #d8d2c4;border-radius:8px;padding:14px;cursor:pointer;background:#fbf9f3;display:block}
+.zone:hover{border-color:#888}.zone.ok{border-color:#2d6a4f;background:#f0f7f3}.zone.opt{border-style:dashed}
+.zone .zsrc{font-size:11px;color:#6b6359;margin-bottom:4px}
+.zone .zlbl{font-size:14px;font-weight:600;margin-bottom:2px}
+.zone .zhint{font-size:11px;color:#6b6359}
+.zone .zfn{font-size:11px;color:#2d6a4f;margin-top:6px;word-break:break-all}
+button.go{background:#1a1814;color:#fff;border:none;padding:10px 28px;font-size:14px;font-weight:600;cursor:pointer;border-radius:4px;margin-top:8px}
+button.go:disabled{opacity:.4;cursor:not-allowed}
+#st{font-size:12px;color:#6b6359;margin-top:8px;font-family:monospace}
+#rv{display:none}
+.kgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:20px 0}
+.kcard{background:#fff;border:1px solid #d8d2c4;border-radius:8px;padding:14px}
+.kcard .kl{font-size:11px;color:#6b6359;margin-bottom:4px}
+.kcard .kn{font-size:28px;font-weight:600;font-family:monospace;margin-bottom:2px}
+.kcard .ks{font-size:11px;color:#6b6359}
+.panel{background:#fff;border:1px solid #d8d2c4;border-radius:8px;padding:16px;margin-bottom:14px}
+.ptitle{font-size:14px;font-weight:600;margin-bottom:10px}
+.tleg{display:flex;gap:10px;font-size:11px;color:#6b6359;margin-bottom:10px;font-family:monospace}
+.tsw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:3px;vertical-align:middle}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{font-size:10px;color:#6b6359;padding:6px 8px;border-bottom:1px solid #d8d2c4;text-align:left;white-space:nowrap;background:#fbf9f3;font-family:monospace}
+th.r,td.r{text-align:right}
+td{padding:7px 8px;border-bottom:1px solid #ede9e1;vertical-align:middle}
+tr.row-ok td{background:rgba(45,106,79,.05)}
+tr.row-warn td{background:rgba(184,134,11,.06)}
+tr.row-bad td{background:rgba(168,32,26,.06)}
+tr.st-a1 td{background:rgba(55,138,221,.06)}.nr-a2{background:rgba(55,138,221,.05)!important}.nr-a3{background:rgba(186,117,23,.05)!important}.nr-a4{background:rgba(45,106,79,.05)!important}
+tr.st-a2 td{background:rgba(186,117,23,.06)}
+tr.st-contacted td{background:rgba(45,106,79,.06)}
+tr.st-declined td{background:rgba(168,32,26,.06)}
+.badge{display:inline-block;font-size:10px;padding:1px 6px;border-radius:3px;font-family:monospace}
+.bd{background:rgba(168,32,26,.12);color:#a8201a}
+.bw{background:rgba(184,134,11,.12);color:#b8860b}
+.bs{background:rgba(45,106,79,.12);color:#2d6a4f}
+.sg{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:10px 0}
+.sbox{border-radius:6px;padding:8px;text-align:center;border:1px solid #d8d2c4;background:#fbf9f3}
+.sbox .sn{font-size:18px;font-weight:600;font-family:monospace}
+.sbox .sl{font-size:10px;color:#6b6359;margin-top:2px}
+.prog{height:7px;border-radius:4px;overflow:hidden;background:#e8e4dc;display:flex;margin:6px 0 4px}
+.ps{height:100%}
+.plbl{font-size:11px;color:#6b6359;font-family:monospace;margin-bottom:10px}
+.stbtn{display:inline-block;font-size:10px;padding:3px 8px;border-radius:4px;border:1px solid #d8d2c4;background:#fbf9f3;cursor:pointer;font-family:monospace;margin:1px;white-space:nowrap}
+.stbtn:hover{background:#f0ece4}
+.stbtn.act-a1{background:rgba(55,138,221,.12);border-color:#378add;color:#185fa5;font-weight:600}
+.stbtn.act-a2{background:rgba(186,117,23,.12);border-color:#ba7517;color:#854f0b;font-weight:600}
+.stbtn.act-contacted{background:rgba(45,106,79,.12);border-color:#2d6a4f;color:#2d6a4f;font-weight:600}
+.stbtn.act-declined{background:rgba(168,32,26,.12);border-color:#a8201a;color:#a8201a;font-weight:600}
+.legend{display:flex;gap:16px;font-size:11px;color:#6b6359;margin-top:10px;font-family:monospace}
+.ldot{display:inline-block;width:24px;height:2.5px;margin-right:5px;vertical-align:middle;border-radius:2px}
+.rmok{background:rgba(45,106,79,.08);border:1px solid #7cb899;border-radius:6px;padding:8px 14px;font-size:12px;color:#2d6a4f;margin-bottom:10px;font-family:monospace}
+.scroll{max-height:320px;overflow-y:auto}
+button.back{background:none;border:1px solid #d8d2c4;padding:6px 14px;font-size:12px;cursor:pointer;border-radius:4px;margin-top:8px}
+</style>
+</head>
+<body>
+
+<div id="uv">
+  <h1>Trinity &middot; Referral Intelligence</h1>
+  <p class="sub">Upload your weekly exports. First three required, last three optional (remove already-seen patients from the backlog).</p>
+
+  <div class="ssep">Required</div>
+  <div class="zones">
+    <label class="zone" id="zr">
+      <input type="file" accept=".csv" id="fr">
+      <div class="zsrc">My Dental Force</div>
+      <div class="zlbl">Referral List</div>
+      <div class="zhint">Ortho Referrals Export .csv</div>
+      <div class="zfn" id="nr"></div>
+    </label>
+    <label class="zone" id="zo">
+      <input type="file" accept=".csv" id="fo">
+      <div class="zsrc">Peerlogic</div>
+      <div class="zlbl">Outbound Calls</div>
+      <div class="zhint">Outbound call log .csv</div>
+      <div class="zfn" id="no"></div>
+    </label>
+    <label class="zone" id="zi">
+      <input type="file" accept=".csv" id="fi">
+      <div class="zsrc">Peerlogic</div>
+      <div class="zlbl">Inbound Calls</div>
+      <div class="zhint">Inbound call log .csv</div>
+      <div class="zfn" id="ni"></div>
+    </label>
+  </div>
+
+  <div class="ssep">Optional &mdash; removes already-seen patients</div>
+  <div class="zones">
+    <label class="zone opt" id="zst">
+      <input type="file" accept=".csv" id="fst">
+      <div class="zsrc">Cloud 9</div>
+      <div class="zlbl">Starts</div>
+      <div class="zhint">optional</div>
+      <div class="zfn" id="nst"></div>
+    </label>
+    <label class="zone opt" id="zex">
+      <input type="file" accept=".csv" id="fex">
+      <div class="zsrc">Cloud 9</div>
+      <div class="zlbl">New Exams</div>
+      <div class="zhint">optional</div>
+      <div class="zfn" id="nex"></div>
+    </label>
+    <label class="zone opt" id="zap">
+      <input type="file" accept=".csv" id="fap">
+      <div class="zsrc">Cloud 9</div>
+      <div class="zlbl">Appointments</div>
+      <div class="zhint">optional</div>
+      <div class="zfn" id="nap"></div>
+    </label>
+  </div>
+
+  <button class="go" id="abtn" disabled onclick="run()">Analyze &rarr;</button>
+  <button onclick="clearAllCache();location.reload();" style="background:none;border:1px solid #d8d2c4;padding:9px 16px;font-size:13px;cursor:pointer;border-radius:4px;margin-top:8px;margin-left:8px;color:#6b6359">Clear cache</button>
+  <div id="st"></div>
+</div>
+
+<div id="rv">
+  <div class="kgrid" id="krow"></div>
+
+  <div class="panel">
+    <div class="ptitle">Weekly referrals vs outbound calls (MDF-matched)</div>
+    <svg id="lchart" width="100%" style="display:block;overflow:visible"></svg>
+    <div class="legend">
+      <span><span class="ldot" style="background:#1a1814"></span>Referrals</span>
+      <span><span class="ldot" style="background:#378add"></span>Outbound (MDF)</span>
+    </div>
+  </div>
+
+  <!-- Funnel panel -->
+  <div class="panel">
+    <div class="ptitle">Conversion funnel — by referral cohort</div>
+    <div id="funnel-note" style="font-size:11px;color:#b8860b;font-family:monospace;margin-bottom:12px;display:none">
+      Upload Starts, New Exams, and Appointments to see Scheduled / Examined / Started stages.
+    </div>
+    <!-- Overall funnel bars -->
+    <div id="funnel-overall" style="margin-bottom:20px"></div>
+    <!-- Cohort table -->
+    <div style="overflow-x:auto">
+      <table id="funnel-tbl">
+        <thead><tr>
+          <th>Referral week</th>
+          <th class="r">Referrals</th>
+          <th class="r">Contacted</th>
+          <th class="r">No Response</th>
+          <th class="r">Scheduled</th>
+          <th class="r">Examined</th>
+          <th class="r">Started</th>
+        </tr></thead>
+        <tbody id="funnel-tb"></tbody>
+        <tfoot><tr id="funnel-ft" style="font-weight:600;border-top:2px solid #1a1814"></tr></tfoot>
+      </table>
+    </div>
+  </div>
+
+  <div class="panel" style="overflow-x:auto">
+    <div class="ptitle">Weekly tracking table</div>
+    <div class="tleg">
+      <span><span class="tsw" style="background:rgba(45,106,79,.2)"></span>&ge;75% contacted</span>
+      <span><span class="tsw" style="background:rgba(184,134,11,.2)"></span>25&ndash;74%</span>
+      <span><span class="tsw" style="background:rgba(168,32,26,.2)"></span>&lt;25%</span>
+    </div>
+    <table>
+      <thead><tr>
+        <th>Week</th><th class="r">Refs</th><th class="r">Outbound</th><th class="r">Rate</th>
+        <th class="r">Not called</th><th class="r">Missed no CB</th>
+        <th class="r">Cum refs</th><th class="r">Cum outbound</th><th class="r">Gap</th>
+      </tr></thead>
+      <tbody id="wtb"></tbody>
+      <tfoot><tr id="wft" style="font-weight:600;border-top:2px solid #1a1814"></tr></tfoot>
+    </table>
+  </div>
+
+  <div class="panel">
+    <div class="ptitle">Referrals not contacted <span id="ncc" style="color:#a8201a;font-weight:400"></span></div>
+    <div id="rmbanner"></div>
+    <div class="sg" id="ncsg"></div>
+    <div class="prog" id="ncprog"></div>
+    <div class="plbl" id="nclbl"></div>
+    <div class="scroll">
+      <table>
+        <thead><tr>
+          <th>Date</th><th>Patient Name</th><th>Phone</th>
+          <th>Referring Office</th><th>Referring Doctor</th><th>Peerlogic</th><th>Status</th>
+        </tr></thead>
+        <tbody id="nctb"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="ptitle">Missed &mdash; no callback <span id="mcc" style="color:#b8860b;font-weight:400"></span></div>
+    <div class="sg" id="mcsg"></div>
+    <div class="prog" id="mcprog"></div>
+    <div class="plbl" id="mclbl"></div>
+    <div class="scroll">
+      <table>
+        <thead><tr>
+          <th>Patient Name</th><th>Phone</th><th>Referring Office</th>
+          <th class="r">Misses</th><th class="r">Last missed</th><th>Status</th>
+        </tr></thead>
+        <tbody id="mctb"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- No Response Worklist -->
+  <div class="panel">
+    <div class="ptitle">Called &mdash; no response <span id="nrcc" style="color:var(--color-text-warning)"></span></div>
+    <div style="font-size:11px;color:var(--color-text-secondary);font-family:var(--font-mono);margin-bottom:.5rem">Referral patients who were called but no Purpose was logged &mdash; all outbound calls went unanswered</div>
+    <div class="sg" id="nr-stats"></div>
+    <div class="prog" id="nr-prog"></div>
+    <div class="plbl" id="nr-lbl"></div>
+    <div style="max-height:300px;overflow-y:auto">
+      <table>
+        <thead><tr>
+          <th>Date</th><th>Patient Name</th><th>Phone</th>
+          <th>Referring Office</th><th>Referring Doctor</th>
+          <th class="r">Times called</th><th>Attempt</th>
+        </tr></thead>
+        <tbody id="nrtb"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <button class="back" onclick="reset()">&larr; Upload new files</button>
+  <button class="back" onclick="exportDashboard()" style="margin-left:8px;background:#1a1814;color:#fff;border-color:#1a1814">&#8595; Export dashboard</button>
+</div>
+
+<script>
+// ── data store ──────────────────────────────────────────────
+var D = {r:null, o:null, i:null, st:null, ex:null, ap:null};
+var loaded = {r:0, o:0, i:0};
+var ncSt = {}, mcSt = {}, nrSt = {};
+
+// ── helpers ─────────────────────────────────────────────────
+function normPhone(p) {
+  if (!p) return null;
+  var d = String(p).replace(/\D/g, '');
+  if (d.length === 11 && d[0] === '1') d = d.slice(1);
+  return d.length === 10 ? d : null;
+}
+function fmtPhone(p) {
+  if (!p || p.length !== 10) return p || '—';
+  return '(' + p.slice(0,3) + ') ' + p.slice(3,6) + '-' + p.slice(6);
+}
+function parseDate(s) {
+  if (!s) return null;
+  s = String(s).trim();
+  if (s.indexOf('T') > 0) return new Date(s.slice(0,10) + 'T12:00:00');
+  var m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (m) return new Date(m[3] + '-' + ('0'+m[1]).slice(-2) + '-' + ('0'+m[2]).slice(-2) + 'T12:00:00');
+  return null;
+}
+function weekStart(s) {
+  var d = parseDate(s);
+  if (!d || isNaN(d)) return null;
+  d.setDate(d.getDate() - d.getDay());
+  return d.toISOString().slice(0, 10);
+}
+function fmtDate(d) {
+  if (!d) return '—';
+  var dt;
+  if (typeof d === 'string') {
+    dt = d.indexOf('T') >= 0 ? new Date(d) : new Date(d + 'T12:00:00');
+  } else { dt = d; }
+  if (!dt || isNaN(dt)) return '—';
+  return dt.toLocaleDateString('en-US', {month:'short', day:'numeric'});
+}
+function normName(n) {
+  if (!n) return '';
+  n = String(n).toLowerCase().replace(/[^a-z\s,]/g, '').trim();
+  if (n.indexOf(',') > 0) {
+    var p = n.split(',', 2);
+    n = (p[1]||'').trim() + ' ' + (p[0]||'').trim();
+  }
+  return n.replace(/\s+/g, ' ').trim();
+}
+// get a field from a PapaParse row — handles BOM on first column
+function gf(row, name) {
+  if (row[name] !== undefined) return String(row[name] || '');
+  // try stripping BOM from key
+  var k = Object.keys(row).find(function(k) {
+    return k.replace(/^\uFEFF/, '').trim() === name;
+  });
+  return k ? String(row[k] || '') : '';
+}
+
+// ── localStorage cache ────────────────────────────────────────
+var CACHE_PREFIX = 'trinity_tool_';
+var LABELS = {r:'Referral List', o:'Outbound Calls', i:'Inbound Calls', st:'Starts', ex:'New Exams', ap:'Appointments'};
+
+function saveCache(k, csvText, filename) {
+  try {
+    var meta = {filename: filename, saved: new Date().toISOString(), size: csvText.length};
+    localStorage.setItem(CACHE_PREFIX + k, csvText);
+    localStorage.setItem(CACHE_PREFIX + k + '_meta', JSON.stringify(meta));
+  } catch(e) {
+    console.warn('Cache save failed (file may be too large):', e.message);
+  }
+}
+
+function loadCache(k) {
+  try {
+    var csv = localStorage.getItem(CACHE_PREFIX + k);
+    var meta = JSON.parse(localStorage.getItem(CACHE_PREFIX + k + '_meta') || '{}');
+    return csv ? {csv: csv, meta: meta} : null;
+  } catch(e) { return null; }
+}
+
+function clearAllCache() {
+  ['r','o','i','st','ex','ap'].forEach(function(k) {
+    localStorage.removeItem(CACHE_PREFIX + k);
+    localStorage.removeItem(CACHE_PREFIX + k + '_meta');
+  });
+}
+
+function parseAndStore(k, csvText, filename) {
+  var req = ['r','o','i'].indexOf(k) >= 0;
+  // all files now use header:true — optional Cloud9 files are clean CSVs
+  Papa.parse(csvText, {
+    header: true, skipEmptyLines: true,
+    transformHeader: function(h){ return h.replace(/^\uFEFF/,'').trim(); },
+    complete: function(res) {
+      D[k] = res.data;
+      if (req) { loaded[k] = 1; checkReady(); }
+    }
+  });
+  var saved = new Date().toLocaleDateString('en-US', {month:'short', day:'numeric'});
+  document.getElementById('n' + k).innerHTML = filename +
+    '<br><span style="color:#2d6a4f;font-size:10px">&#10003; cached ' + saved + '</span>';
+  document.getElementById('z' + k).classList.add('ok');
+}
+
+// ── file loading ─────────────────────────────────────────────
+var fileKeys = ['r','o','i','st','ex','ap'];
+fileKeys.forEach(function(k) {
+  var zone = document.getElementById('z' + k);
+  var inp  = document.getElementById('f' + k);
+  zone.addEventListener('click', function(e) { if (e.target !== inp) inp.click(); });
+  inp.addEventListener('change', function() {
+    var f = inp.files[0]; if (!f) return;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var csvText = e.target.result;
+      saveCache(k, csvText, f.name);
+      parseAndStore(k, csvText, f.name);
+    };
+    reader.readAsText(f);
+  });
+});
+
+// ── auto-load from cache on startup ──────────────────────────
+window.addEventListener('load', function() {
+  var anyFound = false;
+  ['r','o','i','st','ex','ap'].forEach(function(k) {
+    var cached = loadCache(k);
+    if (cached && cached.csv) {
+      anyFound = true;
+      var d = new Date(cached.meta.saved||'');
+      var dateStr = isNaN(d) ? '' : d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+      document.getElementById('n' + k).innerHTML =
+        (cached.meta.filename||LABELS[k]) + '<br><span style="color:#2d6a4f;font-size:10px">✓ cached ' + dateStr + '</span>';
+      document.getElementById('z' + k).classList.add('ok');
+      var req = ['r','o','i'].indexOf(k) >= 0;
+      Papa.parse(cached.csv, {
+        header: true, skipEmptyLines: true,
+        transformHeader: function(h){ return h.replace(/^\uFEFF/,'').trim(); },
+        complete: function(res) {
+          D[k] = res.data;
+          if (req) { loaded[k] = 1; checkReady(); }
+        }
+      });
+    }
+  });
+  if (anyFound) {
+    setMsg('Loaded from cache — upload new files to replace, or click Clear Cache to start fresh.');
+  }
+});
+
+function checkReady() {
+  var ok = loaded.r && loaded.o && loaded.i;
+  document.getElementById('abtn').disabled = !ok;
+}
+function setMsg(m) { document.getElementById('st').textContent = m; }
+function run() {
+  document.getElementById('abtn').disabled = true;
+  setMsg('Processing…');
+  setTimeout(function() {
+    try { render(analyze()); }
+    catch(e) { setMsg('Error: ' + e.message); console.error(e); document.getElementById('abtn').disabled = false; }
+  }, 30);
+}
+
+// ── name normalization for matching ──────────────────────────
+// Handles both "Last, First Middle" (Cloud9) and "First Last" (MDF)
+// Returns {full: "first middle last", key: "first last"} for flexible matching
+function nameKeys(raw) {
+  if (!raw || !raw.trim()) return null;
+  var s = raw.trim();
+  // Cloud9 format: "LAST, FIRST MIDDLE" — split on first comma
+  if (s.indexOf(',') > 0) {
+    var parts = s.split(',', 2);
+    var last  = parts[0].trim();
+    var rest  = parts[1].trim(); // "FIRST MIDDLE" or just "FIRST"
+    s = rest + ' ' + last;       // → "FIRST MIDDLE LAST"
+  }
+  // lowercase, remove non-alpha except spaces
+  s = s.toLowerCase().replace(/[^a-z\s]/g, '').replace(/\s+/g,' ').trim();
+  if (s.length < 4) return null;
+  var words = s.split(' ').filter(function(w){ return w.length > 0; });
+  if (words.length < 2) return null;
+  var full  = words.join(' ');
+  var key   = words[0] + ' ' + words[words.length - 1]; // first + last only
+  return { full: full, key: key };
+}
+
+function namesMatch(a, b) {
+  if (!a || !b) return false;
+  // match if either full names equal OR first+last keys equal
+  return (a.full === b.full) || (a.key === b.key && a.key.length > 5);
+}
+
+// ── per-source seen sets (name-only, targeted column) ─────────
+
+// Find the column index by scanning for a header name (first 5 rows)
+function findColByHeader(rows, search) {
+  if (!rows) return -1;
+  var needle = search.toLowerCase().replace(/[\s_\-]/g, '');
+  for (var ri = 0; ri < Math.min(5, rows.length); ri++) {
+    var vals = Array.isArray(rows[ri]) ? rows[ri] : Object.values(rows[ri]);
+    for (var ci = 0; ci < vals.length; ci++) {
+      var v = String(vals[ci]||'').toLowerCase().replace(/[\s_\-]/g, '');
+      if (v === needle) return ci;
+    }
+  }
+  return -1;
+}
+
+// Detect name-like value: 2+ alpha words, no digits — accepts "Last, First" OR "First Last"
+function isNameLike(s) {
+  if (!s || s.length < 4 || /\d/.test(s)) return false;
+  var words = s.trim().split(/[\s,]+/).filter(function(w){
+    return /^[a-zA-Z\-\']+$/.test(w) && w.length > 1;
+  });
+  return words.length >= 2;
+}
+
+// Auto-detect name column: scan ALL rows, find col with most name-like values
+function autoDetectNameCol(rows) {
+  if (!rows || rows.length < 3) return -1;
+  var scores = {};
+  rows.forEach(function(row) {
+    var vals = Array.isArray(row) ? row : Object.values(row);
+    vals.forEach(function(v, i) {
+      if (isNameLike(String(v||''))) scores[i] = (scores[i]||0) + 1;
+    });
+  });
+  var best = -1, bestScore = 2;
+  Object.keys(scores).forEach(function(i) {
+    if (scores[i] > bestScore) { bestScore = scores[i]; best = parseInt(i); }
+  });
+  return best;
+}
+
+function buildSourceSets() {
+  // Clean file column names (confirmed from uploaded files):
+  //   Scheduled : "Patient First Last Name"          First Last (no comma)
+  //   Exams     : "Patient First Name Last Name"     Last, First  + "Patient ID"
+  //   Starts    : "Patient First Last Name"          Last, First  + "Patient ID"
+  //
+  // Matching chain:
+  //   Referral -> Scheduled : name  (MDF vs Scheduled)
+  //   Referral -> Examined  : name  (MDF vs Exams)
+  //   Referral -> Started   : name -> Exam patient ID -> Start patient ID
+
+  var src = {
+    appt:  { names: [] },
+    exam:  { names: [], idMap: new Map() },
+    start: { names: [] },
+  };
+
+  // ── Scheduled: First Last format ──
+  var apCount = 0;
+  if (D.ap) {
+    D.ap.forEach(function(row) {
+      var s = (row['Patient First Last Name']||row['Patient Name']||'').trim();
+      if (!isNameLike(s)) return;
+      var nk = nameKeys(s);
+      if (nk) { src.appt.names.push(nk); apCount++; }
+    });
+  }
+
+  // ── Exams: Last, First format + Patient ID ──
+  var exCount = 0;
+  if (D.ex) {
+    D.ex.forEach(function(row) {
+      var s = (row['Patient First Name Last Name']||row['Patient First Last Name']||row['Patient Name']||'').trim();
+      if (!isNameLike(s)) return;
+      var nk = nameKeys(s);
+      if (!nk) return;
+      src.exam.names.push(nk); exCount++;
+      var id = (row['Patient ID']||row['PatientID']||'').trim();
+      if (id) { src.exam.idMap.set(nk.key, id); src.exam.idMap.set(nk.full, id); }
+    });
+  }
+
+  // ── Starts: direct name match (same approach as scheduled/examined) ──
+  var stCount = 0;
+  if (D.st) {
+    D.st.forEach(function(row) {
+      var s = (row['Patient First Last Name']||row['Patient First Name Last Name']||row['Patient Name']||'').trim();
+      if (!isNameLike(s)) return;
+      var nk = nameKeys(s);
+      if (nk) { src.start.names.push(nk); stCount++; }
+    });
+  }
+
+  return src;
+}
+function inSrc(src, refName) {
+  if (!refName || !refName.trim() || !src.names) return false;
+  var refKey = nameKeys(refName);
+  if (!refKey) return false;
+  for (var i = 0; i < src.names.length; i++) {
+    if (namesMatch(refKey, src.names[i])) return true;
+  }
+  return false;
+}
+
+// Combined seen set for filtering not-contacted + missed lists
+function buildSeen(srcSets) {
+  var names = [], reasons = {};
+  function merge(src, reason) {
+    if (!src.names) return;
+    src.names.forEach(function(nk) {
+      names.push(nk);
+      reasons[nk.key]  = reason;
+      reasons[nk.full] = reason;
+    });
+  }
+  merge(srcSets.appt, 'Scheduled');
+  merge(srcSets.exam,  'Had exam');
+  // for starts: a referral who started was also examined, so exam names cover them
+  return { names: names, reasons: reasons };
+}
+
+// ── core analysis ────────────────────────────────────────────
+function analyze() {
+  // 0. build per-source sets for funnel
+  var srcSets = buildSourceSets();
+  // 1. referrals (2026+)
+  var refs = D.r.map(function(r) {
+    var ds = gf(r, 'Date Submitted');
+    return {
+      name:   gf(r, 'Patient Name').trim(),
+      phone:  normPhone(gf(r, 'Patient Phone Number')),
+      office: gf(r, 'Referring Office').trim(),
+      doctor: gf(r, 'Referring Doctor').trim(),
+      date:   parseDate(ds),
+      week:   weekStart(ds)
+    };
+  }).filter(function(r) { return r.date && r.date.getFullYear() >= 2026; });
+
+  // 2. outbound map  phone → {calls:[weeks], hasResponse: bool}
+  // hasResponse = true if ANY outbound call to this phone had a non-empty Purposes column
+  var obMap = new Map();
+  D.o.forEach(function(r) {
+    var ph = normPhone(gf(r, 'Receiver')); if (!ph) return;
+    var w = weekStart(gf(r, 'Date & Time'));
+    var purpose = (gf(r, 'Purposes') || gf(r, 'Purpose') || '').trim();
+    if (!obMap.has(ph)) obMap.set(ph, {calls:[], hasResponse:false});
+    var entry = obMap.get(ph);
+    entry.calls.push(w);
+    if (purpose.length > 0) entry.hasResponse = true;
+  });
+
+  // 3. inbound missed from referral patients
+  var refPhones = new Set(refs.map(function(r) { return r.phone; }).filter(Boolean));
+  var ibMap = new Map();
+  D.i.forEach(function(r) {
+    if (gf(r, 'Connection').toLowerCase() !== 'missed') return;
+    var ph = normPhone(gf(r, 'Caller')); if (!ph || !refPhones.has(ph)) return;
+    var dt = gf(r, 'Date & Time'), d = parseDate(dt), w = weekStart(dt);
+    if (!ibMap.has(ph)) ibMap.set(ph, {first:d, last:d, count:0, name:gf(r,'Caller Name').trim(), firstW:w});
+    var e = ibMap.get(ph); e.count++;
+    if (d && e.first && d < e.first) { e.first = d; e.firstW = w; }
+    if (d && e.last  && d > e.last)  e.last = d;
+  });
+
+  refs.forEach(function(r) {
+    var ob = obMap.get(r.phone);
+    r.contacted   = ob ? ob.calls.length > 0 : false;
+    r.noResponse  = r.contacted && !(ob.hasResponse);  // called but Purpose always empty
+    r.calledIn    = ibMap.has(r.phone);
+    r.scheduled   = inSrc(srcSets.appt,  r.name);
+    r.examined    = inSrc(srcSets.exam,  r.name);
+    r.started     = inSrc(srcSets.start, r.name);  // direct name match, same as scheduled/examined
+  });
+
+  // 4. missed-no-callback
+  var mcb = [];
+  ibMap.forEach(function(v, ph) {
+    var ob = obMap.get(ph);
+    var obCalls = ob ? ob.calls : [];
+    var hasLater = obCalls.some(function(w) { return w && v.firstW && w >= v.firstW; });
+    if (!hasLater) {
+      var ref = refs.find(function(r) { return r.phone === ph; });
+      mcb.push({ phone:ph, name:ref?ref.name:v.name, office:ref?ref.office:'', doctor:ref?ref.doctor:'',
+                 first:v.first, last:v.last, count:v.count, week:v.firstW });
+    }
+  });
+
+  // build no-response list with call count per patient
+  var noResponseList = refs.filter(function(r){ return r.noResponse; })
+    .map(function(r){
+      var ob = obMap.get(r.phone);
+      return { name:r.name, phone:r.phone, office:r.office, doctor:r.doctor,
+               date:r.date, callCount: ob ? ob.calls.length : 0 };
+    })
+    .sort(function(a,b){ return b.callCount - a.callCount; });
+
+  // 5. weekly aggregation
+  var wk = {};
+  refs.forEach(function(r) {
+    if (!r.week) return;
+    if (!wk[r.week]) wk[r.week] = {refs:0, nc:0, mn:0, contacted:0, noResponse:0, scheduled:0, examined:0, started:0};
+    wk[r.week].refs++;
+    if (!r.contacted)  wk[r.week].nc++;
+    if (r.contacted)   wk[r.week].contacted++;
+    if (r.noResponse)  wk[r.week].noResponse++;
+    if (r.scheduled)   wk[r.week].scheduled++;
+    if (r.examined)    wk[r.week].examined++;
+    if (r.started)     wk[r.week].started++;
+  });
+  var obWk = {};
+  obMap.forEach(function(entry, ph) {
+    if (!refPhones.has(ph)) return;
+    entry.calls.forEach(function(w) { if (w) obWk[w] = (obWk[w]||0) + 1; });
+  });
+  mcb.forEach(function(m) { if (m.week && wk[m.week]) wk[m.week].mn++; });
+  var sorted = Object.keys(wk).sort(), cR = 0, cO = 0;
+  var rows = sorted.map(function(w) {
+    cR += wk[w].refs; cO += obWk[w]||0;
+    return { week:w, refs:wk[w].refs, ob:obWk[w]||0, nc:wk[w].nc, mn:wk[w].mn||0,
+             contacted:wk[w].contacted, noResponse:wk[w].noResponse,
+             scheduled:wk[w].scheduled, examined:wk[w].examined, started:wk[w].started,
+             cR:cR, cO:cO, gap:cR-cO };
+  });
+
+  // overall funnel totals
+  var funnel = {
+    refs:       refs.length,
+    contacted:  refs.filter(function(r){return r.contacted;}).length,
+    noResponse: refs.filter(function(r){return r.noResponse;}).length,
+    scheduled:  refs.filter(function(r){return r.scheduled;}).length,
+    examined:   refs.filter(function(r){return r.examined;}).length,
+    started:    refs.filter(function(r){return r.started;}).length,
+    hasOptional: !!(D.ap || D.ex || D.st),
+  };
+
+  // 6. filter both lists against optional files
+  var seen = buildSeen(srcSets);
+
+  // filter referrals not contacted
+  var rawNC = refs.filter(function(r) { return !r.contacted; })
+                  .sort(function(a,b) { return (a.date||0)-(b.date||0); });
+  var removed = [], notCalled = [];
+  rawNC.forEach(function(r) {
+    var refKey = nameKeys(r.name);
+    var matched = false, matchReason = '';
+    if (refKey) {
+      for (var j = 0; j < seen.names.length; j++) {
+        if (namesMatch(refKey, seen.names[j])) {
+          matched = true;
+          matchReason = seen.reasons[seen.names[j].key] || seen.reasons[seen.names[j].full] || 'Other';
+          break;
+        }
+      }
+    }
+    if (matched) {
+      removed.push({name:r.name, phone:r.phone, office:r.office, doctor:r.doctor,
+                    date:r.date, calledIn:r.calledIn, foundIn: matchReason});
+    } else {
+      notCalled.push(r);
+    }
+  });
+
+  // filter missed-no-callback — same logic
+  var mcbFiltered = [], mcbRemoved = [];
+  mcb.sort(function(a,b){return b.count-a.count;}).forEach(function(r) {
+    var refKey = nameKeys(r.name);
+    var matched = false;
+    if (refKey) {
+      for (var j = 0; j < seen.names.length; j++) {
+        if (namesMatch(refKey, seen.names[j])) { matched = true; break; }
+      }
+    }
+    if (matched) mcbRemoved.push(r);
+    else mcbFiltered.push(r);
+  });
+
+  return {
+    total:      refs.length,
+    contacted:  refs.filter(function(r){return r.contacted;}).length,
+    notCalled:  notCalled,
+    removed:    removed,
+    mcb:        mcbFiltered,
+    mcbRemoved: mcbRemoved,
+    rows:       rows,
+    funnel:       funnel,
+    noResponseList: noResponseList,
+  };
+}
+
+// ── chart ────────────────────────────────────────────────────
+function drawChart(rows) {
+  var svg = document.getElementById('lchart');
+  var W = svg.getBoundingClientRect().width || 700;
+  var H=190, pl=36, pr=20, pt=18, pb=50, cW=W-pl-pr, cH=H-pt-pb, n=rows.length;
+  if (!n) { svg.innerHTML=''; return; }
+  var maxV = rows.reduce(function(m,r){return Math.max(m,r.refs,r.ob);}, 1);
+  function px(i) { return pl + i*(cW/(n-1||1)); }
+  function py(v) { return pt + cH - (v/maxV*cH); }
+  var g = '';
+  for (var t=0; t<=4; t++) {
+    var y = pt+cH*(1-t/4), v = Math.round(maxV*t/4);
+    g += '<line x1="'+pl+'" y1="'+y+'" x2="'+(W-pr)+'" y2="'+y+'" stroke="#d8d2c4" stroke-width="0.5"/>';
+    g += '<text x="'+(pl-6)+'" y="'+(y+4)+'" text-anchor="end" font-size="9" fill="#6b6359" font-family="monospace">'+v+'</text>';
+  }
+  function poly(data, color) {
+    return '<polyline points="'+data.map(function(v,i){return px(i)+','+py(v);}).join(' ')+
+           '" fill="none" stroke="'+color+'" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>';
+  }
+  function dots(data, color) {
+    return data.map(function(v,i){
+      return '<circle cx="'+px(i)+'" cy="'+py(v)+'" r="3" fill="'+color+'" stroke="#fbf9f3" stroke-width="1.5">' +
+             '<title>'+fmtDate(rows[i].week)+': '+v+'</title></circle>';
+    }).join('');
+  }
+  var xl = '', step = Math.ceil(n/10);
+  rows.forEach(function(r,i) {
+    if (i%step!==0 && i!==n-1) return;
+    xl += '<text x="'+px(i)+'" y="'+(H-4)+'" text-anchor="middle" font-size="9" fill="#6b6359" font-family="monospace" '+
+          'transform="rotate(-35,'+px(i)+','+(H-4)+')">'+fmtDate(r.week)+'</text>';
+  });
+  svg.setAttribute('height', H);
+  svg.innerHTML = g +
+    poly(rows.map(function(r){return r.refs;}), '#1a1814') +
+    poly(rows.map(function(r){return r.ob;}),   '#378add') +
+    dots(rows.map(function(r){return r.refs;}), '#1a1814') +
+    dots(rows.map(function(r){return r.ob;}),   '#378add') + xl;
+}
+
+// ── stats widgets ─────────────────────────────────────────────
+function updStats(store, sgId, progId, lblId, total) {
+  var c = {a1:0, a2:0, contacted:0, declined:0};
+  Object.values(store).forEach(function(v) { if (c[v]!==undefined) c[v]++; });
+  var act = c.a1+c.a2+c.contacted+c.declined, none = total-act;
+  document.getElementById(sgId).innerHTML = [
+    {l:'No attempt', n:none,        tc:'#6b6359'},
+    {l:'Attempt 1',  n:c.a1,        tc:'#185fa5'},
+    {l:'Attempt 2',  n:c.a2,        tc:'#854f0b'},
+    {l:'Contacted',  n:c.contacted, tc:'#2d6a4f'},
+    {l:'Declined',   n:c.declined,  tc:'#a8201a'},
+  ].map(function(s) {
+    return '<div class="sbox"><div class="sn" style="color:'+s.tc+'">'+s.n+'</div><div class="sl">'+s.l+'</div></div>';
+  }).join('');
+  document.getElementById(progId).innerHTML = [
+    {n:none,        c:'#d8d2c4'},
+    {n:c.a1,        c:'#378add'},
+    {n:c.a2,        c:'#ba7517'},
+    {n:c.contacted, c:'#2d6a4f'},
+    {n:c.declined,  c:'#a8201a'},
+  ].map(function(s) {
+    return '<div class="ps" style="width:'+(total?Math.round(100*s.n/total):0)+'%;background:'+s.c+'"></div>';
+  }).join('');
+  var pct = total ? Math.round(100*act/total) : 0;
+  document.getElementById(lblId).textContent =
+    pct+'% actioned · '+c.contacted+' contacted · '+(c.a1+c.a2)+' in progress · '+c.declined+' declined';
+}
+
+function applyStatus(id, key, isNc) {
+  var store = isNc ? ncSt : mcSt;
+  var total = isNc ? window._ncT : window._mcT;
+  store[id] = key;
+  updStats(store, isNc?'ncsg':'mcsg', isNc?'ncprog':'mcprog', isNc?'nclbl':'mclbl', total);
+  var row = document.getElementById(id);
+  if (row) {
+    ['st-a1','st-a2','st-contacted','st-declined'].forEach(function(c){row.classList.remove(c);});
+    if (key !== 'none') row.classList.add('st-' + key);
+  }
+}
+
+function stBtns(id, store, isNc) {
+  var cur = store[id] || 'none';
+  var keys = ['none','a1','a2','contacted','declined'];
+  var labels = {none:'No attempt', a1:'Attempt 1', a2:'Attempt 2', contacted:'Contacted', declined:'Declined'};
+  var cls    = {none:'', a1:'act-a1', a2:'act-a2', contacted:'act-contacted', declined:'act-declined'};
+  return keys.map(function(k) {
+    return '<button class="stbtn '+(cur===k&&k!=='none'?cls[k]:'')+
+           '" onclick="applyStatus(\''+id+'\',\''+k+'\','+(isNc?'true':'false')+')">'+labels[k]+'</button>';
+  }).join('');
+}
+
+// ── funnel render ─────────────────────────────────────────────
+function renderFunnel(res) {
+  var f = res.funnel;
+  var hasOpt = f.hasOptional;
+  document.getElementById('funnel-note').style.display = hasOpt ? 'none' : 'block';
+
+  var maxN = f.refs || 1;
+
+  // overall funnel bars
+  var stages = [
+    { lbl:'Referrals',    n:f.refs,        color:'#1a1814', sub:false, note:'' },
+    { lbl:'Contacted',    n:f.contacted,   color:'#378add', sub:false, note:'had outbound call' },
+    { lbl:'No Response',  n:f.noResponse,  color:'#b8860b', sub:true,  note:'purpose empty' },
+    { lbl:'Scheduled',    n:f.scheduled,   color:'#2d6a4f', sub:false, note:'in appointments', opt:true },
+    { lbl:'Examined',     n:f.examined,    color:'#5c7a3e', sub:false, note:'new patient exam', opt:true },
+    { lbl:'Started',      n:f.started,     color:'#a8201a', sub:false, note:'contract signed', opt:true },
+  ].filter(function(s){ return !s.opt || hasOpt; });
+
+  document.getElementById('funnel-overall').innerHTML = stages.map(function(s) {
+    var barW = Math.max(2, Math.round(100 * s.n / maxN));
+    var pct  = Math.round(100 * s.n / maxN);
+    var subNote = s.sub && f.contacted > 0
+      ? Math.round(100*s.n/f.contacted) + '% of contacted &middot; ' + s.note
+      : pct + '% of referrals' + (s.note ? ' &middot; ' + s.note : '');
+    return '<div style="display:flex;align-items:center;gap:12px;margin-bottom:' + (s.sub?'4':'9') + 'px' +
+           (s.sub ? ';padding-left:20px' : '') + '">' +
+      '<div style="width:110px;font-size:' + (s.sub?'11':'12') + 'px;font-weight:600;text-align:right;' +
+           'color:' + (s.sub?s.color:'#6b6359') + ';flex-shrink:0">' + s.lbl + '</div>' +
+      '<div style="flex:1;background:#f0ece4;border-radius:3px;height:' + (s.sub?'22':'28') + 'px;position:relative">' +
+        '<div style="position:absolute;left:0;top:0;height:100%;width:' + barW + '%;background:' + s.color +
+             ';border-radius:3px;opacity:' + (s.sub?'.65':'.82') + ';transition:width .4s"></div>' +
+        '<div style="position:absolute;left:10px;top:0;height:100%;display:flex;align-items:center;' +
+             'font-size:' + (s.sub?'11':'12') + 'px;font-weight:600;color:#fff;font-family:monospace;z-index:1">' + s.n + '</div>' +
+      '</div>' +
+      '<div style="width:200px;font-size:10px;color:#6b6359;font-family:monospace;flex-shrink:0">' + subNote + '</div>' +
+    '</div>';
+  }).join('');
+
+  // cohort table
+  document.getElementById('funnel-tb').innerHTML = res.rows.map(function(r) {
+    function pctCell(n, base, hide) {
+      if (!hasOpt && hide) return '<td class="r" style="color:#d8d2c4">—</td>';
+      var pct = base ? Math.round(100*n/base) : 0;
+      var c = pct>=75?'#2d6a4f':pct>=40?'#b8860b':pct>0?'#a8201a':'#6b6359';
+      return '<td class="r"><span style="font-weight:600">' + n + '</span>' +
+             (base&&n>0?'<span style="font-size:10px;color:'+c+';margin-left:4px">('+pct+'%)</span>':'') + '</td>';
+    }
+    var nrPct = r.contacted ? Math.round(100*r.noResponse/r.contacted) : 0;
+    var nrC   = nrPct>=60?'#a8201a':nrPct>=30?'#b8860b':'#2d6a4f';
+    var nrCell = '<td class="r" style="color:' + (r.noResponse>0?nrC:'#6b6359') + '">' +
+                 '<span style="font-weight:600">' + r.noResponse + '</span>' +
+                 (r.contacted>0&&r.noResponse>0?'<span style="font-size:10px;margin-left:4px">('+nrPct+'%)</span>':'') + '</td>';
+    return '<tr>' +
+      '<td style="font-weight:600;white-space:nowrap">' + fmtDate(r.week) + '</td>' +
+      '<td class="r" style="font-weight:600">' + r.refs + '</td>' +
+      pctCell(r.contacted, r.refs, false) +
+      nrCell +
+      pctCell(r.scheduled, r.refs, true) +
+      pctCell(r.examined,  r.refs, true) +
+      pctCell(r.started,   r.refs, true) +
+    '</tr>';
+  }).join('');
+
+  // totals
+  var nrPct = f.contacted ? Math.round(100*f.noResponse/f.contacted) : 0;
+  var nrC   = nrPct>=60?'#a8201a':nrPct>=30?'#b8860b':'#2d6a4f';
+  function tCell(n, base, hide) {
+    if (!hasOpt && hide) return '<td class="r" style="color:#d8d2c4">—</td>';
+    var pct = base ? Math.round(100*n/base) : 0;
+    var c = pct>=75?'#2d6a4f':pct>=40?'#b8860b':pct>0?'#a8201a':'#6b6359';
+    return '<td class="r" style="font-weight:600">' + n +
+           (base&&n>0?'<span style="font-size:10px;color:'+c+';margin-left:4px;font-weight:400">('+pct+'%)</span>':'') + '</td>';
+  }
+  document.getElementById('funnel-ft').innerHTML =
+    '<td>TOTAL</td><td class="r" style="font-weight:600">' + f.refs + '</td>' +
+    tCell(f.contacted,  f.refs, false) +
+    '<td class="r" style="font-weight:600;color:'+nrC+'">' + f.noResponse +
+      '<span style="font-size:10px;margin-left:4px;font-weight:400">('+nrPct+'% of called)</span></td>' +
+    tCell(f.scheduled, f.refs, true) +
+    tCell(f.examined,  f.refs, true) +
+    tCell(f.started,   f.refs, true);
+}
+
+function rowCls(refs, ob) {
+  if (!refs) return '';
+  var r = ob/refs;
+  return r>=0.75 ? 'row-ok' : r>=0.25 ? 'row-warn' : 'row-bad';
+}
+function rateBadge(refs, ob) {
+  if (!refs) return '—';
+  var p = Math.round(100*ob/refs);
+  return '<span class="badge '+(p>=75?'bs':p>=25?'bw':'bd')+'">'+p+'%</span>';
+}
+
+// ── render ────────────────────────────────────────────────────
+function render(res) {
+  window._lastRes = res;
+  setMsg('');
+  document.getElementById('uv').style.display = 'none';
+  document.getElementById('rv').style.display = 'block';
+
+  // KPIs
+  var rate = res.total ? Math.round(100*res.contacted/res.total) : 0;
+  document.getElementById('krow').innerHTML = [
+    {l:'2026 Referrals',     v:res.total,          s:'Jan 1 → today',              c:'#1a1814'},
+    {l:'Contacted',          v:res.contacted,       s:rate+'% contact rate',         c:'#2d6a4f'},
+    {l:'Not Contacted',      v:res.notCalled.length,s:'after filtering seen patients',c:'#a8201a'},
+    {l:'Missed → No Callback',v:res.mcb.length,    s:'referral patients only',      c:'#b8860b'},
+  ].map(function(k) {
+    return '<div class="kcard"><div class="kl">'+k.l+'</div>' +
+           '<div class="kn" style="color:'+k.c+'">'+k.v+'</div>' +
+           '<div class="ks">'+k.s+'</div></div>';
+  }).join('');
+
+  // Chart
+  drawChart(res.rows);
+
+  // Funnel
+  renderFunnel(res);
+
+  // Debug panel — shows column detection results
+
+  // Weekly table
+  document.getElementById('wtb').innerHTML = res.rows.map(function(r) {
+    var gc = r.gap>0?'#a8201a':'#2d6a4f';
+    return '<tr class="'+rowCls(r.refs,r.ob)+'">' +
+      '<td style="font-weight:600;white-space:nowrap">'+fmtDate(r.week)+'</td>' +
+      '<td class="r">'+r.refs+'</td><td class="r">'+r.ob+'</td>' +
+      '<td class="r">'+rateBadge(r.refs,r.ob)+'</td>' +
+      '<td class="r" style="'+(r.nc>0?'color:#a8201a;font-weight:600':'')+'">'+r.nc+'</td>' +
+      '<td class="r" style="'+(r.mn>0?'color:#b8860b;font-weight:600':'')+'">'+r.mn+'</td>' +
+      '<td class="r">'+r.cR+'</td><td class="r">'+r.cO+'</td>' +
+      '<td class="r" style="color:'+gc+';font-weight:600">'+(r.gap>0?'+':'')+r.gap+'</td>' +
+    '</tr>';
+  }).join('');
+
+  var L = res.rows[res.rows.length-1] || {};
+  var tg = L.gap||0, tgc = tg>0?'#a8201a':'#2d6a4f';
+  var totO = L.cO||0, totR = res.total?Math.round(100*totO/res.total):0;
+  var tc = totR>=75?'bs':totR>=25?'bw':'bd';
+  document.getElementById('wft').innerHTML =
+    '<td>TOTAL</td><td class="r">'+res.total+'</td><td class="r">'+totO+'</td>' +
+    '<td class="r"><span class="badge '+tc+'">'+totR+'%</span></td>' +
+    '<td class="r" style="color:#a8201a">'+res.notCalled.length+'</td>' +
+    '<td class="r" style="color:#b8860b">'+res.mcb.length+'</td>' +
+    '<td class="r">'+(L.cR||0)+'</td><td class="r">'+totO+'</td>' +
+    '<td class="r" style="color:'+tgc+'">'+(tg>0?'+':'')+tg+'</td>';
+
+  // Removed banner — shows patients filtered from BOTH lists
+  document.getElementById('ncc').textContent = '(' + res.notCalled.length + ')';
+  var totalRemoved = res.removed.length + (res.mcbRemoved||[]).length;
+  if (totalRemoved > 0) {
+    var by = {};
+    res.removed.forEach(function(r) { var s=r.foundIn||'Other'; by[s]=(by[s]||0)+1; });
+    (res.mcbRemoved||[]).forEach(function(r) {
+      var s = (r.phone && res.removed.length && res.removed.find(function(x){return x.phone===r.phone;})||{}).foundIn||'Other';
+      by[s]=(by[s]||0)+1;
+    });
+    document.getElementById('rmbanner').innerHTML =
+      '<div class="rmok">✓ '+res.removed.length+' from "not contacted" and '+(res.mcbRemoved||[]).length+
+      ' from "missed no callback" removed — appeared in: ' +
+      Object.entries(by).map(function(e){return e[1]+' '+e[0];}).join(' · ')+'</div>';
+  } else {
+    document.getElementById('rmbanner').innerHTML = '';
+  }
+
+  // Not-contacted list
+  window._ncT = res.notCalled.length;
+  updStats(ncSt, 'ncsg', 'ncprog', 'nclbl', res.notCalled.length);
+  document.getElementById('nctb').innerHTML = res.notCalled.map(function(r, i) {
+    var id = 'nc_' + i, cur = ncSt[id]||'none';
+    return '<tr id="'+id+'"'+(cur!=='none'?' class="st-'+cur+'"':'')+'>' +
+      '<td style="font-size:11px;color:#6b6359;white-space:nowrap">'+fmtDate(r.date)+'</td>' +
+      '<td style="font-weight:600;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+r.name+'</td>' +
+      '<td style="font-family:monospace;color:#6b6359;white-space:nowrap">'+fmtPhone(r.phone)+'</td>' +
+      '<td style="color:#6b6359;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px">'+r.office+'</td>' +
+      '<td style="color:#6b6359;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px">'+r.doctor+'</td>' +
+      '<td>'+(r.calledIn?'<span class="badge bw">called in</span>':'<span class="badge bd">no trace</span>')+'</td>' +
+      '<td style="white-space:nowrap">'+stBtns(id, ncSt, true)+'</td>' +
+    '</tr>';
+  }).join('');
+
+  // Missed no-callback list
+  document.getElementById('mcc').textContent = '(' + res.mcb.length + ')';
+  window._mcT = res.mcb.length;
+  updStats(mcSt, 'mcsg', 'mcprog', 'mclbl', res.mcb.length);
+  document.getElementById('mctb').innerHTML = res.mcb.map(function(r, i) {
+    var id = 'mc_' + i, cur = mcSt[id]||'none';
+    return '<tr id="'+id+'"'+(cur!=='none'?' class="st-'+cur+'"':'')+'>' +
+      '<td style="font-weight:600;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(r.name||'—')+'</td>' +
+      '<td style="font-family:monospace;color:#6b6359;white-space:nowrap">'+fmtPhone(r.phone)+'</td>' +
+      '<td style="color:#6b6359;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px">'+r.office+'</td>' +
+      '<td class="r"><span class="badge '+(r.count>=3?'bd':'bw')+'">'+r.count+'×</span></td>' +
+      '<td class="r" style="font-size:11px;color:#6b6359;white-space:nowrap">'+fmtDate(r.last)+'</td>' +
+      '<td style="white-space:nowrap">'+stBtns(id, mcSt, false)+'</td>' +
+    '</tr>';
+  }).join('');
+
+
+  // ── No-response worklist ─────────────────────────────────────
+  var nrl = res.noResponseList || [];
+  document.getElementById('nrcc').textContent = '(' + nrl.length + ')';
+  window._nrT = nrl.length;
+
+
+  // ── Called — No Response list ─────────────────────────────
+  var nrLbl   = {a2:'Attempt 2', a3:'Attempt 3', a4:'Attempt 4'};
+  var nrBgMap  = {a2:'rgba(55,138,221,.05)', a3:'rgba(186,117,23,.05)', a4:'rgba(45,106,79,.05)'};
+  var nrClsMap = {a2:'s1', a3:'s2', a4:'s3'};
+
+  function redrawNrStats() {
+    var tot = nrl.length, ct = {a2:0, a3:0, a4:0};
+    Object.keys(nrSt).forEach(function(k){ var v=nrSt[k]; if(ct[v]!==undefined) ct[v]++; });
+    var none = tot - ct.a2 - ct.a3 - ct.a4;
+    var el = document.getElementById('nr-stats');
+    if (el) el.innerHTML =
+      '<div class="sbox"><div class="sn" style="color:#6b6359">'+none+'</div><div class="sl">Pending</div></div>'+
+      '<div class="sbox"><div class="sn" style="color:#185fa5">'+ct.a2+'</div><div class="sl">Attempt 2</div></div>'+
+      '<div class="sbox"><div class="sn" style="color:#854f0b">'+ct.a3+'</div><div class="sl">Attempt 3</div></div>'+
+      '<div class="sbox"><div class="sn" style="color:#2d6a4f">'+ct.a4+'</div><div class="sl">Attempt 4</div></div>';
+    var pr = document.getElementById('nr-prog');
+    if (pr) pr.innerHTML =
+      '<div class="ps" style="width:'+(tot?Math.round(100*none/tot):0)+'%;background:#d8d2c4"></div>'+
+      '<div class="ps" style="width:'+(tot?Math.round(100*ct.a2/tot):0)+'%;background:#378add"></div>'+
+      '<div class="ps" style="width:'+(tot?Math.round(100*ct.a3/tot):0)+'%;background:#ba7517"></div>'+
+      '<div class="ps" style="width:'+(tot?Math.round(100*ct.a4/tot):0)+'%;background:#2d6a4f"></div>';
+    var lb = document.getElementById('nr-lbl');
+    var act = ct.a2+ct.a3+ct.a4;
+    if (lb) lb.textContent = (tot?Math.round(100*act/tot):0)+'% actioned';
+  }
+
+  window.nrClick = function(btn) {
+    var rid = btn.getAttribute('data-rid');
+    var key = btn.getAttribute('data-key');
+    if (!rid || !key) return;
+    nrSt[rid] = key;
+    redrawNrStats();
+    var row = document.getElementById(rid);
+    if (row) {
+      row.style.background = nrBgMap[key] || '';
+      row.querySelectorAll('button[data-rid]').forEach(function(b) {
+        var k = b.getAttribute('data-key');
+        b.className = 'stbtn' + (k===key ? ' '+(nrClsMap[k]||'') : '');
+      });
+    }
+  };
+
+  document.getElementById('nrcc').textContent = '(' + nrl.length + ')';
+  document.getElementById('nrtb').innerHTML = nrl.map(function(r, i) {
+    var id  = 'nr_' + i;
+    var cur = nrSt[id] || 'none';
+    var bg  = nrBgMap[cur] || '';
+    var cc  = r.callCount >= 3 ? '#a8201a' : r.callCount >= 2 ? '#b8860b' : '#6b6359';
+    var btns = ['a2','a3','a4'].map(function(k) {
+      return '<button data-rid="' + id + '" data-key="' + k + '" class="stbtn' +
+             (cur===k ? ' '+(nrClsMap[k]||'') : '') +
+             '" onclick="nrClick(this)">' + nrLbl[k] + '</button>';
+    }).join('');
+    return '<tr id="' + id + '" style="background:' + bg + '">' +
+      '<td style="font-size:11px;color:#6b6359;white-space:nowrap">' + fmtDate(r.date) + '</td>' +
+      '<td style="font-weight:600">' + r.name + '</td>' +
+      '<td style="font-family:monospace;color:#6b6359;white-space:nowrap">' + fmtPhone(r.phone) + '</td>' +
+      '<td style="font-size:11px;color:#6b6359">' + r.office + '</td>' +
+      '<td style="font-size:11px;color:#6b6359">' + r.doctor + '</td>' +
+      '<td style="text-align:right;font-family:monospace;font-weight:700;font-size:13px;color:' + cc + '">' + r.callCount + '&times;</td>' +
+      '<td style="white-space:nowrap">' + btns + '</td>' +
+    '</tr>';
+  }).join('');
+  redrawNrStats();
+
+}
+
+// ── reset ─────────────────────────────────────────────────────
+
+function exportDashboard() {
+  if (!window._lastRes) { alert('Run analysis first'); return; }
+
+  // Serialize all state
+  var data  = JSON.stringify(window._lastRes);
+  var nc    = JSON.stringify(ncSt);
+  var mc    = JSON.stringify(mcSt);
+  var nr    = JSON.stringify(nrSt);
+  var today = new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+
+  // Get full tool HTML and inject embedded data + auto-render script
+  var src = document.documentElement.outerHTML;
+
+  // Replace title
+  src = src.replace(/<title>[^<]*<\/title>/, '<title>Trinity Dashboard — ' + today + '</title>');
+
+  // Remove the upload view div from the DOM snapshot
+  src = src.replace(/ style="display: ?none"/, '');  // clear any hidden states
+
+  // Inject before </body>: data + init
+  var initScript = '<script>' +
+    'var _D=' + data + ';' +
+    'var _NC=' + nc + ';' +
+    'var _MC=' + mc + ';' +
+    'var _NR=' + nr + ';' +
+    'document.addEventListener("DOMContentLoaded",function(){' +
+      // restore status states
+      'Object.assign(ncSt,_NC);' +
+      'Object.assign(mcSt,_MC);' +
+      'Object.assign(nrSt,_NR);' +
+      // hide upload, show results
+      'var uv=document.getElementById("uv");' +
+      'var rv=document.getElementById("rv");' +
+      'if(uv) uv.style.display="none";' +
+      'if(rv) rv.style.display="block";' +
+      // add export date banner
+      'var banner=document.createElement("div");' +
+      'banner.style.cssText="background:#1a1814;color:#f8f7f4;padding:8px 24px;font-size:11px;font-family:monospace;letter-spacing:.04em";' +
+      'banner.textContent="CSS DENTAL · TRINITY REFERRAL INTELLIGENCE · Exported ' + today + '";' +
+      'document.body.insertBefore(banner,document.body.firstChild);' +
+      // hide analyze/upload buttons and debug from results view
+      'var back=document.querySelector(".back");' +
+      'if(back&&back.parentNode){' +
+        'Array.from(back.parentNode.querySelectorAll("button.back")).forEach(function(b){b.style.display="none";});' +
+      '}' +
+      // render with embedded data
+      'try{render(_D);}catch(e){console.error("Render error:",e);}' +
+    '});' +
+  '<\/script>';
+
+  src = src.replace('</body>', initScript + '</body>');
+
+  var blob = new Blob([src], {type:'text/html;charset=utf-8'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'Trinity_Dashboard_' + new Date().toISOString().slice(0,10) + '.html';
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+}
+
+function reset() {
+  // reset UI state only — cache is preserved so next page load auto-restores
+  fileKeys.forEach(function(k) {
+    D[k] = null;
+    if (['r','o','i'].indexOf(k)>=0) loaded[k] = 0;
+    var cached = loadCache(k);
+    var z = document.getElementById('z'+k), f = document.getElementById('f'+k);
+    if (f) f.value = '';
+    if (cached) {
+      // restore from cache
+      var d = new Date(cached.meta.saved||'');
+      var dateStr = isNaN(d) ? '' : d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+      document.getElementById('n'+k).innerHTML =
+        (cached.meta.filename||LABELS[k])+'<br><span style="color:#2d6a4f;font-size:10px">✓ cached '+dateStr+'</span>';
+      if (z) z.classList.add('ok');
+      var req = ['r','o','i'].indexOf(k)>=0;
+      Papa.parse(cached.csv, {header:true,skipEmptyLines:true,complete:function(res){D[k]=res.data;if(req){loaded[k]=1;checkReady();}}});
+    } else {
+      document.getElementById('n'+k).textContent = '';
+      if (z) z.classList.remove('ok');
+    }
+  });
+  document.getElementById('uv').style.display = 'block';
+  document.getElementById('rv').style.display = 'none';
+  setMsg('');
+}  var nrLbl = {a2:'Attempt 2', a3:'Attempt 3', a4:'Attempt 4'};
+  var nrBgMap = {a2:'rgba(55,138,221,.05)', a3:'rgba(186,117,23,.05)', a4:'rgba(45,106,79,.05)'};
+  var nrClsMap = {a2:'s1', a3:'s2', a4:'s3'};
+
+</script>
+</body>
+</html>
